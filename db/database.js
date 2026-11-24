@@ -2,8 +2,13 @@ const { DatabaseSync } = require('node:sqlite');
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 
-const DB_DIR = path.join(__dirname, '..', 'data');
+// On serverless platforms like Vercel, the app root is read-only.
+// Use os.tmpdir() when running under Vercel or AWS Lambda.
+const DB_DIR = (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME)
+  ? path.join(os.tmpdir(), 'cng_data')
+  : path.join(__dirname, '..', 'data');
 const DB_PATH = path.join(DB_DIR, 'cng_connect.db');
 const SCHEMA_PATH = path.join(__dirname, 'schema.sql');
 
@@ -15,9 +20,72 @@ const db = new DatabaseSync(DB_PATH);
 // Enforce SQLite Foreign Key constraints for relational data integrity
 db.exec('PRAGMA foreign_keys = ON;');
 
+// Fallback schema in case schema.sql is not bundled in serverless output
+const FALLBACK_SCHEMA_SQL = `
+CREATE TABLE IF NOT EXISTS stations (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  address TEXT NOT NULL,
+  city TEXT NOT NULL,
+  area TEXT NOT NULL,
+  latitude REAL NOT NULL,
+  longitude REAL NOT NULL,
+  phone TEXT,
+  opening_hours TEXT,
+  availability_status TEXT NOT NULL CHECK(availability_status IN ('available', 'unavailable', 'unknown', 'not_reported')),
+  pressure_status TEXT CHECK(pressure_status IN ('high', 'medium', 'low', 'unknown')),
+  pressure_bar REAL,
+  estimated_wait_minutes INTEGER,
+  source TEXT NOT NULL,
+  is_demo INTEGER NOT NULL DEFAULT 1 CHECK(is_demo IN (0, 1)),
+  last_updated_at TEXT NOT NULL,
+  created_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS users (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  email TEXT NOT NULL UNIQUE,
+  password_hash TEXT NOT NULL,
+  salt TEXT NOT NULL,
+  role TEXT NOT NULL DEFAULT 'driver' CHECK(role IN ('driver', 'station_manager', 'admin')),
+  phone TEXT,
+  vehicle_type TEXT DEFAULT 'Cab / Taxi',
+  created_at TEXT NOT NULL,
+  last_login_at TEXT
+);
+CREATE TABLE IF NOT EXISTS sessions (
+  token TEXT PRIMARY KEY,
+  user_id INTEGER NOT NULL,
+  expires_at TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+CREATE TABLE IF NOT EXISTS user_favorites (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL,
+  station_id INTEGER NOT NULL,
+  created_at TEXT NOT NULL,
+  UNIQUE(user_id, station_id),
+  FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY(station_id) REFERENCES stations(id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS idx_stations_city ON stations(city);
+CREATE INDEX IF NOT EXISTS idx_stations_area ON stations(area);
+CREATE INDEX IF NOT EXISTS idx_stations_availability ON stations(availability_status);
+CREATE INDEX IF NOT EXISTS idx_stations_coords ON stations(latitude, longitude);
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions(user_id);
+CREATE INDEX IF NOT EXISTS idx_favorites_user_id ON user_favorites(user_id);
+`;
+
 // Initialize schema
 function initSchema() {
-  const schemaSql = fs.readFileSync(SCHEMA_PATH, 'utf-8');
+  let schemaSql;
+  try {
+    schemaSql = fs.readFileSync(SCHEMA_PATH, 'utf-8');
+  } catch (err) {
+    schemaSql = FALLBACK_SCHEMA_SQL;
+  }
   db.exec(schemaSql);
   seedInitialUsers();
 }
