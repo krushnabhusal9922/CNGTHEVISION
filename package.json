@@ -1,0 +1,19 @@
+{
+  "name": "cng_2.0",
+  "version": "1.0.0",
+  "description": "CNG Connect — Station Discovery, Comparison & Management Platform",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "seed": "node db/seed.js",
+    "test": "node --test --test-concurrency=1 tests/api.test.js tests/auth.test.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "cors": "^2.8.6",
+    "express": "^5.3.0"
+  }
+}

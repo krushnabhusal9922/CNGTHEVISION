@@ -1,0 +1,1527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CNG Connect — Station Discovery, Live Pressure Telemetry & Management Platform</title>
+  <meta name="description" content="Discover and compare nearby CNG stations with live operational availability, dispenser pressure telemetry, estimated queue wait times, and straight-line distances across Delhi NCR, Mumbai, and Pune.">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Leaflet CSS for Map -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+
+  <!-- App Stylesheet -->
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- ========================================== -->
+  <!-- HEADER & NAVIGATION                        -->
+  <!-- ========================================== -->
+  <header class="app-header">
+    <div class="header-container">
+      <!-- Brand Logo & Name -->
+      <div class="brand" id="brandLogoBtn" role="button" tabindex="0" title="Go to CNG Connect Homepage">
+        <div class="brand-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 22V6a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16"/>
+            <path d="M15 10h2a2 2 0 0 1 2 2v4a2 2 0 0 0 2 2v0a2 2 0 0 0 2-2V8a4 4 0 0 0-4-4h-1"/>
+            <path d="M7 11h4"/>
+            <path d="M9 7v8"/>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <h1 class="brand-title">CNG Connect</h1>
+          <span class="brand-tagline">Station Discovery & Telemetry Platform</span>
+        </div>
+      </div>
+
+      <!-- Mode Switcher Navigation Tabs -->
+      <nav class="nav-tabs" aria-label="Main Navigation">
+        <button id="tabHomeBtn" class="tab-btn active" type="button">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+            <polyline points="9 22 9 12 15 12 15 22"/>
+          </svg>
+          <span>Home</span>
+        </button>
+        <button id="tabDriverBtn" class="tab-btn" type="button">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/>
+          </svg>
+          <span>Find Stations</span>
+        </button>
+        <button id="tabAdminBtn" class="tab-btn" type="button">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 20h9"/>
+            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+          </svg>
+          <span>Admin Portal</span>
+        </button>
+      </nav>
+
+      <!-- Right Header Actions: Stats & User Authentication -->
+      <div class="header-right-actions">
+        <!-- AI Voice Assistant Launcher Button -->
+        <button id="openVoiceAssistantBtn" class="voice-assistant-nav-btn" type="button" title="Launch AI Voice Assistant (Press 'V')">
+          <span class="voice-nav-orb">
+            <span class="voice-nav-pulse"></span>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4">
+              <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+              <line x1="12" y1="19" x2="12" y2="22"/>
+            </svg>
+          </span>
+          <span class="voice-nav-text">Voice Assistant</span>
+          <span class="voice-nav-key">V</span>
+        </button>
+
+        <!-- Station Count Metric Pill -->
+        <button id="headerStatsBtn" class="stats-pill-btn" type="button" title="View platform summary metrics">
+          <span id="headerStationCount">15 Stations</span>
+        </button>
+
+        <!-- Guest Auth Controls (Logged Out) -->
+        <div id="navGuestControls" class="auth-guest-controls">
+          <button id="navLoginBtn" class="btn btn-sm btn-ghost-nav" type="button">Sign In</button>
+          <button id="navRegisterBtn" class="btn btn-sm btn-primary" type="button">Register</button>
+        </div>
+
+        <!-- Logged-In User Controls (Logged In) -->
+        <div id="navUserControls" class="auth-user-controls" style="display: none;">
+          <button id="navUserMenuBtn" class="user-menu-btn" type="button" aria-expanded="false" aria-haspopup="true">
+            <span class="user-avatar-circle">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                <circle cx="12" cy="7" r="4"/>
+              </svg>
+            </span>
+            <span id="navUserNameText" class="user-name-text">Driver</span>
+            <span id="navUserRoleBadge" class="role-pill role-driver">Driver</span>
+            <svg class="dropdown-caret" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="6 9 12 15 18 9"/>
+            </svg>
+          </button>
+
+          <!-- Dropdown Menu -->
+          <div id="userDropdownMenu" class="user-dropdown-card" style="display: none;">
+            <div class="dropdown-header">
+              <span class="dropdown-title">Account Menu</span>
+            </div>
+            <button id="dropdownProfileBtn" class="dropdown-item" type="button">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              <span>My Profile</span>
+            </button>
+            <button id="dropdownFavoritesBtn" class="dropdown-item" type="button">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+              <span>Saved Stations</span>
+            </button>
+            <div class="dropdown-divider"></div>
+            <button id="dropdownLogoutBtn" class="dropdown-item dropdown-item-danger" type="button">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+              <span>Sign Out</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ========================================== -->
+  <!-- MAIN APPLICATION CONTAINER                 -->
+  <!-- ========================================== -->
+  <main class="main-wrapper">
+
+    <!-- ========================================== -->
+    <!-- VIEW 1: DEDICATED HOMEPAGE                 -->
+    <!-- ========================================== -->
+    <div id="homeView" class="view-panel active">
+      <!-- Hero Section -->
+      <section class="hero-section">
+        <div class="hero-content">
+          <!-- Live Telemetry Beacon Badge -->
+          <div class="hero-badge">
+            <span class="pulse-beacon"></span>
+            <span>Real-Time CNG Telemetry Network • Multi-Metro Live</span>
+          </div>
+
+          <h2 class="hero-title">
+            Refuel Smarter.<br>
+            <span class="gradient-text">Skip The Queue.</span>
+          </h2>
+
+          <p class="hero-subtitle">
+            Discover verified CNG pumps with live dispenser pressure (bar), queue wait predictions, and straight-line distance estimates across Delhi NCR, Mumbai, and Pune.
+          </p>
+
+          <!-- Hero Instant Search & Quick Action Box -->
+          <div class="hero-search-card">
+            <div class="hero-input-wrap">
+              <svg class="hero-search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"/>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
+              <input
+                type="text"
+                id="heroSearchInput"
+                placeholder="Search station name, area or city (e.g. Connaught Place, BKC, Hinjawadi)..."
+                autocomplete="off"
+              >
+            </div>
+            <div class="hero-action-buttons">
+              <button id="heroSearchSubmitBtn" class="btn btn-primary" type="button">
+                <span>Find Pumps</span>
+              </button>
+              <button id="heroNearMeBtn" class="btn btn-outline" type="button" title="Detect your location and find closest pumps">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 2a8 8 0 0 0-8 8c0 5.25 8 12 8 12s8-6.75 8-12a8 8 0 0 0-8-8z"/>
+                  <circle cx="12" cy="10" r="3"/>
+                </svg>
+                <span>Near Me</span>
+              </button>
+              <button id="heroMapBtn" class="btn btn-secondary" type="button" title="View stations on interactive map">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/>
+                  <line x1="8" y1="2" x2="8" y2="18"/>
+                  <line x1="16" y1="6" x2="16" y2="22"/>
+                </svg>
+                <span>Interactive Map</span>
+              </button>
+              <button id="heroVoiceBtn" class="btn btn-voice-hero" type="button" title="Speak with AI Voice Assistant (Press 'V')">
+                <span class="hero-voice-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                    <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
+                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                    <line x1="12" y1="19" x2="12" y2="22"/>
+                  </svg>
+                </span>
+                <span>Voice Copilot</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Quick City Navigator Chips -->
+          <div class="hero-quick-cities">
+            <span class="quick-cities-label">Explore City:</span>
+            <button class="hero-city-chip" id="heroCityAll" type="button" data-city="all">All Metros</button>
+            <button class="hero-city-chip" id="heroCityDelhi" type="button" data-city="New Delhi">Delhi NCR</button>
+            <button class="hero-city-chip" id="heroCityMumbai" type="button" data-city="Mumbai">Mumbai MMR</button>
+            <button class="hero-city-chip" id="heroCityPune" type="button" data-city="Pune">Pune & PCMC</button>
+          </div>
+
+          <!-- Live Metrics Banner -->
+          <div class="hero-metrics-grid">
+            <div class="hero-metric-card">
+              <div class="metric-icon-wrap icon-green">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+              </div>
+              <div class="metric-info">
+                <span class="metric-stat" id="heroStatStations">15+</span>
+                <span class="metric-desc">Verified Stations Live</span>
+              </div>
+            </div>
+
+            <div class="hero-metric-card">
+              <div class="metric-icon-wrap icon-teal">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+              </div>
+              <div class="metric-info">
+                <span class="metric-stat" id="heroStatPressure">215 Bar</span>
+                <span class="metric-desc">Peak Dispenser Pressure</span>
+              </div>
+            </div>
+
+            <div class="hero-metric-card">
+              <div class="metric-icon-wrap icon-blue">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              </div>
+              <div class="metric-info">
+                <span class="metric-stat" id="heroStatWait">~12 Mins</span>
+                <span class="metric-desc">Avg. Reported Queue</span>
+              </div>
+            </div>
+
+            <div class="hero-metric-card">
+              <div class="metric-icon-wrap icon-purple">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              </div>
+              <div class="metric-info">
+                <span class="metric-stat">7 Languages</span>
+                <span class="metric-desc">AI Multilingual Assistant</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section: Key Value Proposition & Features -->
+      <section class="section-container features-section">
+        <div class="section-header text-center">
+          <span class="section-badge">Platform Architecture</span>
+          <h3 class="section-title">Engineered For Clean Mobility Drivers & Fleets</h3>
+          <p class="section-desc">Stop driving blindly to low-pressure or dry pumps. CNG Connect provides real-time transparency before you begin your journey.</p>
+        </div>
+
+        <div class="features-grid">
+          <!-- Feature 1: Pressure Telemetry -->
+          <div class="feature-card">
+            <div class="feature-icon icon-teal">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+              </svg>
+            </div>
+            <h4>Live Dispenser Pressure (Bar)</h4>
+            <p>Know whether a station is dispensing at peak pressure (≥200 bar), moderate pressure, or below 160 bar so your cylinder gets completely filled.</p>
+          </div>
+
+          <!-- Feature 2: Wait Times -->
+          <div class="feature-card">
+            <div class="feature-icon icon-green">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <polyline points="12 6 12 12 16 14"/>
+              </svg>
+            </div>
+            <h4>Queue & Wait Time Forecasting</h4>
+            <p>Avoid 45-minute queues during rush hour. View live wait times calculated from vehicle counts and dispenser throughput.</p>
+          </div>
+
+          <!-- Feature 3: Straight-Line & Maps -->
+          <div class="feature-card">
+            <div class="feature-icon icon-blue">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="3 11 22 2 13 21 11 13 3 11"/>
+              </svg>
+            </div>
+            <h4>Proximity Distance & Google Maps</h4>
+            <p>Accurate straight-line Haversine calculations from your coordinates plus seamless 1-tap Google Maps directions right to the dispenser.</p>
+          </div>
+
+          <!-- Feature 4: Multilingual AI -->
+          <div class="feature-card">
+            <div class="feature-icon icon-purple">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/>
+              </svg>
+            </div>
+            <h4>Multilingual Voice & Text Assistant</h4>
+            <p>Ask our smart AI in Hindi, Marathi, Gujarati, English or Spanish about operational pumps, shortest queues, and current pressure.</p>
+          </div>
+
+          <!-- Feature 5: Accounts & Saved Favorites -->
+          <div class="feature-card">
+            <div class="feature-icon icon-red">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+              </svg>
+            </div>
+            <h4>Driver Accounts & Saved Pumps</h4>
+            <p>Sign up to favorite your regular commuting pumps, review historical wait times, and receive priority telemetry updates.</p>
+          </div>
+
+          <!-- Feature 6: Operator Management -->
+          <div class="feature-card">
+            <div class="feature-icon icon-amber">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              </svg>
+            </div>
+            <h4>Operator & Partner Registry</h4>
+            <p>Station attendants and fleet operators can securely log in to update operational telemetry, report maintenance, and verify pump pressure.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section: Major Metro Hubs -->
+      <section class="section-container cities-section">
+        <div class="section-header text-center">
+          <span class="section-badge">Coverage Hubs</span>
+          <h3 class="section-title">Major CNG Regional Networks</h3>
+          <p class="section-desc">Explore live dispenser networks across primary logistics and commuter zones.</p>
+        </div>
+
+        <div class="cities-grid">
+          <!-- City 1: Delhi NCR -->
+          <div class="city-card" onclick="window.exploreCityStations('New Delhi')">
+            <div class="city-card-header">
+              <span class="city-tag">Northern Corridor</span>
+              <span class="city-count-badge">6 Stations</span>
+            </div>
+            <h4>Delhi NCR Hub</h4>
+            <p>Indraprastha Gas Limited (IGL) mother stations across Connaught Place, Noida Sector 62, Lajpat Nagar, Rohini, and Dwarka.</p>
+            <div class="city-card-footer">
+              <span class="city-explore-link">Explore Delhi Stations &rarr;</span>
+            </div>
+          </div>
+
+          <!-- City 2: Mumbai MMR -->
+          <div class="city-card" onclick="window.exploreCityStations('Mumbai')">
+            <div class="city-card-header">
+              <span class="city-tag">Western Hub</span>
+              <span class="city-count-badge">5 Stations</span>
+            </div>
+            <h4>Mumbai MMR</h4>
+            <p>Mahanagar Gas Limited (MGL) retail outlets serving Bandra Kurla Complex (BKC), Andheri East, Navi Mumbai, and Thane corridors.</p>
+            <div class="city-card-footer">
+              <span class="city-explore-link">Explore Mumbai Stations &rarr;</span>
+            </div>
+          </div>
+
+          <!-- City 3: Pune & PCMC -->
+          <div class="city-card" onclick="window.exploreCityStations('Pune')">
+            <div class="city-card-header">
+              <span class="city-tag">Tech & Logistics</span>
+              <span class="city-count-badge">4 Stations</span>
+            </div>
+            <h4>Pune & PCMC</h4>
+            <p>Maharashtra Natural Gas Limited (MNGL) dispensing network covering Shivajinagar, Hinjawadi IT Park, and Hadapsar.</p>
+            <div class="city-card-footer">
+              <span class="city-explore-link">Explore Pune Stations &rarr;</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section: 3-Step Process -->
+      <section class="section-container how-it-works-section">
+        <div class="section-header text-center">
+          <span class="section-badge">How It Works</span>
+          <h3 class="section-title">Refueling Made Simple in 3 Steps</h3>
+        </div>
+
+        <div class="steps-grid">
+          <div class="step-card">
+            <div class="step-number">1</div>
+            <h4>Detect or Search Location</h4>
+            <p>Click "Near Me" to compute straight-line distance, or search for your planned destination or transit area.</p>
+          </div>
+          <div class="step-card">
+            <div class="step-number">2</div>
+            <h4>Compare Pressure & Queues</h4>
+            <p>Pick stations with full green pressure indicators (200+ bar) and under 15-minute queues to maximize fuel intake.</p>
+          </div>
+          <div class="step-card">
+            <div class="step-number">3</div>
+            <h4>Navigate & Refuel</h4>
+            <p>Tap "Directions" to open navigation in Google Maps and drive right up to the best dispenser without waiting.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section: Community Testimonials -->
+      <section class="section-container testimonials-section">
+        <div class="section-header text-center">
+          <span class="section-badge">Driver Community</span>
+          <h3 class="section-title">Trusted By Commercial & Private Drivers</h3>
+        </div>
+
+        <div class="testimonials-grid">
+          <div class="testimonial-card">
+            <div class="testimonial-stars">★★★★★</div>
+            <p class="testimonial-quote">"Before CNG Connect, I used to waste up to 45 minutes in lines only to get 150 bar pressure. Now I check telemetry first and refuel in 15 minutes with a full cylinder."</p>
+            <div class="testimonial-author">
+              <div class="author-avatar">🚕</div>
+              <div>
+                <strong>Rajesh Sharma</strong>
+                <span>Cab Driver • Delhi NCR (Dzire CNG)</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="testimonial-card">
+            <div class="testimonial-stars">★★★★★</div>
+            <p class="testimonial-quote">"The Hindi AI voice bot is brilliant. I can tap the mic while waiting at traffic lights and ask which pump in BKC has the shortest queue."</p>
+            <div class="testimonial-author">
+              <div class="author-avatar">🛺</div>
+              <div>
+                <strong>Mahesh Jadhav</strong>
+                <span>Auto Rickshaw Operator • Mumbai</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="testimonial-card">
+            <div class="testimonial-stars">★★★★★</div>
+            <p class="testimonial-quote">"Saving my regular commute pumps to my favorites lets me check the Hinjawadi IT Park station status right from my office desk before leaving."</p>
+            <div class="testimonial-author">
+              <div class="author-avatar">🚗</div>
+              <div>
+                <strong>Pooja Deshmukh</strong>
+                <span>Private Commuter • Pune</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section: Call-To-Action Banner -->
+      <section class="cta-banner">
+        <div class="cta-content">
+          <h3>Ready To Save Time On Every Refuel?</h3>
+          <p>Join thousands of drivers discovering operational CNG stations with live pressure telemetry and zero waiting queues.</p>
+          <div class="cta-action-group">
+            <button class="btn btn-primary btn-lg" onclick="window.openAuthModal('register')">Create Free Driver Account</button>
+            <button class="btn btn-outline-white btn-lg" onclick="window.switchView('driver')">Explore Live Station Map</button>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- VIEW 2: DRIVER DISCOVERY VIEW              -->
+    <!-- ========================================== -->
+    <div id="driverView" class="view-panel" style="display: none;">
+      <!-- Hero Headline for Main Discovery Page -->
+      <section class="discovery-hero-banner">
+        <div class="discovery-hero-wrap">
+          <div class="discovery-hero-title-group">
+            <div class="discovery-eyebrow">
+              <span class="live-pulse-dot"></span>
+              <span>Live CNG Network Telemetry &bull; Multi-Metro Discovery</span>
+            </div>
+            <h1 class="discovery-page-title">Find &amp; Compare CNG Stations</h1>
+            <p class="discovery-page-sub">
+              Check live dispenser pressure (bar), queue wait predictions, and straight-line proximity across Delhi NCR, Mumbai, and Pune before you refuel.
+            </p>
+          </div>
+          <div class="discovery-telemetry-stats">
+            <div class="telemetry-stat-card">
+              <span class="stat-num" id="summaryTotalCount">15</span>
+              <span class="stat-name">Active Stations</span>
+            </div>
+            <div class="telemetry-stat-card stat-highlight">
+              <span class="stat-num" id="summaryAvailCount">11</span>
+              <span class="stat-name">Dispensing Gas</span>
+            </div>
+            <div class="telemetry-stat-card">
+              <span class="stat-num">&ge; 200 Bar</span>
+              <span class="stat-name">Peak Pressure</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Notice Banner for Data Freshness & Transparency -->
+      <section class="banner-notice" aria-label="System Transparency Notice">
+        <div class="banner-content">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="banner-icon">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="8" x2="12" y2="12"/>
+            <line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          <p>
+            <strong>Data Freshness & Transparency Notice:</strong> Distances shown are <em>straight-line estimates</em>. Operational pressure, wait times and availability reflect reported telemetry or sample records; unknown or stale status values are explicitly highlighted.
+          </p>
+        </div>
+      </section>
+
+      <!-- Search & Location Action Bar -->
+      <section class="search-section">
+        <div class="search-bar-card">
+          <div class="search-input-group">
+            <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"/>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <input
+              type="text"
+              id="searchInput"
+              placeholder="Search by station name, area or city (e.g., Connaught Place, BKC, Sector 62)..."
+              autocomplete="off"
+            >
+            <span class="keyboard-hint-badge" title="Press / key anywhere to search">/</span>
+            <button id="clearSearchBtn" class="clear-btn" type="button" style="display: none;" title="Clear search">&times;</button>
+          </div>
+
+          <div class="location-action-group">
+            <button id="geoLocateBtn" class="btn btn-near-me" type="button" title="Detect your location and calculate straight-line distance">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M12 2v3m0 14v3M2 12h3m14 0h3"/>
+              </svg>
+              <span>Near Me</span>
+            </button>
+
+            <button id="toggleMapBtn" class="btn btn-secondary" type="button">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/>
+                <line x1="8" y1="2" x2="8" y2="18"/>
+                <line x1="16" y1="6" x2="16" y2="22"/>
+              </svg>
+              <span id="toggleMapText">Hide Map</span>
+            </button>
+
+            <button id="driverVoiceBtn" class="btn btn-voice-pill" type="button" title="Speak with AI Voice Assistant (Press 'V')">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                <line x1="12" y1="19" x2="12" y2="22"/>
+              </svg>
+              <span>Voice</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Quick Region Selectors & Active Location Pill -->
+        <div class="sub-search-row">
+          <div class="quick-regions">
+            <span class="filter-label">Quick City:</span>
+            <button class="region-chip active" data-city="all">All Metros (15)</button>
+            <button class="region-chip" data-city="New Delhi">Delhi NCR (6)</button>
+            <button class="region-chip" data-city="Mumbai">Mumbai MMR (5)</button>
+            <button class="region-chip" data-city="Pune">Pune &amp; PCMC (4)</button>
+          </div>
+
+          <div id="activeLocationPill" class="active-location-pill" style="display: none;">
+            <span class="loc-icon">📍</span>
+            <span id="locLabelText">Custom Location Active</span>
+            <button id="resetLocationBtn" type="button" title="Clear location coordinates">&times;</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Advanced Filter & Sorting Toolbar -->
+      <section class="toolbar-section">
+        <div class="filter-group">
+          <!-- Availability Filter -->
+          <div class="control-item">
+            <label for="filterAvailability">Availability</label>
+            <select id="filterAvailability">
+              <option value="all">All Statuses</option>
+              <option value="available">🟢 Available Only</option>
+              <option value="unavailable">🔴 Unavailable</option>
+              <option value="unknown">🟡 Unknown / Unreported</option>
+            </select>
+          </div>
+
+          <!-- Pressure Filter -->
+          <div class="control-item">
+            <label for="filterPressure">Min Pressure</label>
+            <select id="filterPressure">
+              <option value="all">Any Pressure</option>
+              <option value="high">High Pressure (≥200 bar)</option>
+              <option value="medium">Medium Pressure (160-199 bar)</option>
+              <option value="low">Low Pressure (&lt;160 bar)</option>
+            </select>
+          </div>
+
+          <!-- Max Waiting Time Filter -->
+          <div class="control-item">
+            <label for="filterWaitTime">Max Waiting Time</label>
+            <select id="filterWaitTime">
+              <option value="all">Any Wait Time</option>
+              <option value="15">≤ 15 mins</option>
+              <option value="30">≤ 30 mins</option>
+              <option value="45">≤ 45 mins</option>
+            </select>
+          </div>
+
+          <!-- Sort Order -->
+          <div class="control-item">
+            <label for="sortBy">Sort By</label>
+            <select id="sortBy">
+              <option value="default">Default (Smart Rank)</option>
+              <option value="distance">Nearest (Straight-Line)</option>
+              <option value="wait_time">Shortest Queue</option>
+              <option value="pressure">Highest Pressure</option>
+              <option value="availability">Operational Status</option>
+              <option value="last_updated">Recently Verified</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="toolbar-actions">
+          <button id="resetFiltersBtn" class="btn btn-ghost" type="button">Reset Filters</button>
+        </div>
+      </section>
+
+      <!-- Map & Stations Master-Detail Workspace -->
+      <div class="content-split-container">
+        <!-- Interactive Leaflet Map Section -->
+        <section id="mapSection" class="map-section" aria-label="Interactive Map of CNG Stations">
+          <div class="map-card">
+            <div class="map-header">
+              <div class="map-title-row">
+                <h3>Live Station Telemetry Map</h3>
+                <span class="map-sub-label">Pins sync with active filters & straight-line estimates</span>
+              </div>
+              <div class="map-legend">
+                <span class="legend-item"><span class="legend-color avail"></span> Available</span>
+                <span class="legend-item"><span class="legend-color unavail"></span> Unavailable</span>
+                <span class="legend-item"><span class="legend-color unknown"></span> Unknown / Stale</span>
+              </div>
+            </div>
+            <div id="cngMap" class="map-canvas" role="region" aria-label="CNG Stations Leaflet Map"></div>
+            <div id="mapFallback" class="map-fallback" style="display: none;">
+              <p>Interactive map requires active internet connectivity for OpenStreetMap tiles. All station details and telemetry remain fully searchable in the list below.</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- Station Cards Stream -->
+        <section class="results-section">
+          <div class="results-header">
+            <div>
+              <h2 id="resultsCountTitle" class="results-title">Loading CNG Stations...</h2>
+              <p id="resultsSubTitle" class="results-subtitle">Comparing telemetry status and queue estimates</p>
+            </div>
+            <div id="activeSortNotice" class="active-sort-notice" style="display: none;"></div>
+          </div>
+
+          <!-- Loading Skeleton -->
+          <div id="loadingSkeleton" class="stations-grid skeleton-grid" aria-live="polite" aria-busy="true">
+            <div class="skeleton-card"></div>
+            <div class="skeleton-card"></div>
+            <div class="skeleton-card"></div>
+          </div>
+
+          <!-- Station Cards Container -->
+          <div id="stationsContainer" class="stations-grid" style="display: none;" role="region" aria-label="CNG Stations Results">
+            <!-- Station Cards rendered dynamically -->
+          </div>
+
+          <!-- Empty State -->
+          <div id="emptyState" class="empty-state-box" style="display: none;" role="status">
+            <div class="empty-state-icon">🔍</div>
+            <h3>No matching CNG stations found</h3>
+            <p>Try clearing some search terms or widening your availability, pressure, or wait time filters.</p>
+            <button id="emptyResetBtn" class="btn btn-primary" type="button">Reset All Filters</button>
+          </div>
+
+          <!-- Error State -->
+          <div id="errorState" class="error-state-box" style="display: none;" role="alert">
+            <div class="error-icon">⚠️</div>
+            <h3>Unable to fetch station records</h3>
+            <p id="errorMessageText">The server or database connection is currently unavailable.</p>
+            <button id="retryFetchBtn" class="btn btn-primary" type="button">Retry Connection</button>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- VIEW 3: ADMIN MANAGEMENT VIEW              -->
+    <!-- ========================================== -->
+    <div id="adminView" class="view-panel" style="display: none;">
+      <!-- Admin Authorization Warning Gate -->
+      <section id="adminAuthGate" class="admin-auth-gate" style="display: none;" role="alert">
+        <div class="admin-auth-gate-card">
+          <div class="auth-gate-icon">🔐</div>
+          <h3 id="adminAuthGateTitle">Administrator / Operator Authorization Required</h3>
+          <p id="adminAuthGateText">Adding, modifying, or deleting station records requires an authenticated Administrator or Station Operator session.</p>
+          <div class="auth-gate-actions">
+            <button id="adminGateLoginAdminBtn" type="button" class="btn btn-primary" onclick="window.loginAsDemoAdmin()">🛡️ Quick Sign In as Admin</button>
+            <button id="adminGateLoginManagerBtn" type="button" class="btn btn-outline" onclick="window.loginAsDemoManager()">⛽ Quick Sign In as Operator</button>
+            <button id="adminGateCustomLoginBtn" type="button" class="btn btn-ghost" onclick="window.openAuthModal('login')">Custom Login</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Admin Role Status Banner -->
+      <section class="admin-notice-banner" id="adminRoleStatusBanner">
+        <div class="admin-notice-content">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+          <div id="adminNoticeText">
+            <strong>Management Authorization Active:</strong>
+            Station changes require validation against schema rules and coordinate bounds. Unauthenticated submissions are blocked.
+          </div>
+        </div>
+      </section>
+
+      <!-- Admin Actions Toolbar -->
+      <section class="admin-toolbar">
+        <div class="admin-toolbar-left">
+          <h2>CNG Station Registry Management</h2>
+          <p>Add, update or remove station records and operational telemetry.</p>
+        </div>
+        <div class="admin-toolbar-right">
+          <button id="resetDemoBtn" class="btn btn-outline" type="button" title="Reset sample dataset to original seed data">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="1 4 1 10 7 10"/>
+              <polyline points="23 20 23 14 17 14"/>
+              <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/>
+            </svg>
+            <span>Reset Demo Data</span>
+          </button>
+          <button id="openAddStationModalBtn" class="btn btn-primary" type="button">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="12" y1="5" x2="12" y2="19"/>
+              <line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            <span>Add New Station</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- Admin Stations Table -->
+      <section class="admin-table-card">
+        <div class="table-search-header">
+          <input
+            type="text"
+            id="adminSearchInput"
+            placeholder="Search stations in management table..."
+            class="admin-search-input"
+          >
+          <span id="adminTableCount" class="admin-table-count">Total: 15 stations</span>
+        </div>
+        <div class="table-responsive">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Station Name & City</th>
+                <th>Availability</th>
+                <th>Pressure</th>
+                <th>Wait Time</th>
+                <th>Source / Demo</th>
+                <th>Last Updated</th>
+                <th style="text-align: right;">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="adminTableBody">
+              <!-- Admin station rows rendered dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- ========================================== -->
+  <!-- FOOTER                                     -->
+  <!-- ========================================== -->
+  <footer class="app-footer">
+    <div class="footer-container">
+      <div class="footer-col brand-col">
+        <div class="brand">
+          <div class="brand-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <path d="M3 22V6a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16"/>
+              <path d="M15 10h2a2 2 0 0 1 2 2v4a2 2 0 0 0 2 2v0a2 2 0 0 0 2-2V8a4 4 0 0 0-4-4h-1"/>
+              <path d="M7 11h4"/>
+              <path d="M9 7v8"/>
+            </svg>
+          </div>
+          <span class="brand-title">CNG Connect</span>
+        </div>
+        <p class="footer-tagline">
+          Real-time station discovery, dispenser pressure telemetry, and predictive queue management across India's clean mobility networks.
+        </p>
+        <div class="footer-helpline">
+          <span>📞 Emergency Gas Helpline: <strong>1800-102-5109</strong> (IGL) / <strong>1800-266-9900</strong> (MGL)</span>
+        </div>
+      </div>
+
+      <div class="footer-col">
+        <h5>Quick Navigation</h5>
+        <ul class="footer-links">
+          <li><a href="#" onclick="window.switchView('home'); return false;">Home Overview</a></li>
+          <li><a href="#" onclick="window.switchView('driver'); return false;">Find Stations Nearby</a></li>
+          <li><a href="#" onclick="window.switchView('admin'); return false;">Admin Management Portal</a></li>
+          <li><a href="#" onclick="window.openAuthModal('login'); return false;">Driver Sign In</a></li>
+          <li><a href="#" onclick="window.openAuthModal('register'); return false;">Register Account</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col">
+        <h5>Covered Regions</h5>
+        <ul class="footer-links">
+          <li><a href="#" onclick="window.exploreCityStations('New Delhi'); return false;">Delhi NCR (IGL Hubs)</a></li>
+          <li><a href="#" onclick="window.exploreCityStations('Mumbai'); return false;">Mumbai & MMR (MGL)</a></li>
+          <li><a href="#" onclick="window.exploreCityStations('Pune'); return false;">Pune & PCMC (MNGL)</a></li>
+          <li><a href="#" onclick="window.switchView('driver'); return false;">Interactive Leaflet Map</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col">
+        <h5>CNG Safety & Protocols</h5>
+        <ul class="footer-links">
+          <li><span>🔒 Verify Hydro-Test Plate Validity</span></li>
+          <li><span>🛑 Switch Off Engine During Refill</span></li>
+          <li><span>🚶 Disembark Passengers at Dispenser</span></li>
+          <li><span>⚠️ Report Telemetry Discrepancies</span></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <div class="footer-bottom-inner">
+        <span>&copy; 2026 CNG Connect Platform. Open & Transparent Telemetry. Built for Clean Mobility.</span>
+        <span class="system-status-indicator">● All Systems Operational</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ========================================== -->
+  <!-- MODAL: LOGIN & REGISTER                    -->
+  <!-- ========================================== -->
+  <div id="authModal" class="modal-backdrop" style="display: none;" role="dialog" aria-modal="true">
+    <div class="modal-dialog auth-modal-dialog">
+      <div class="modal-header">
+        <div class="auth-tabs-header">
+          <button id="authTabLogin" class="auth-tab-btn active" type="button">Sign In</button>
+          <button id="authTabRegister" class="auth-tab-btn" type="button">Create Account</button>
+        </div>
+        <button id="closeAuthModalBtn" class="modal-close-btn" type="button" aria-label="Close auth dialog">&times;</button>
+      </div>
+
+      <div class="modal-body auth-modal-body">
+        <!-- 1-Click Demo Accounts Bar -->
+        <div class="demo-login-bar">
+          <span class="demo-bar-title">⚡ 1-Click Quick Demo Sign In:</span>
+          <div class="demo-buttons-group">
+            <button id="demoDriverBtn" class="btn btn-sm btn-outline" type="button" title="Sign in as Cab Driver">🚕 Driver Demo</button>
+            <button id="demoAdminBtn" class="btn btn-sm btn-outline" type="button" title="Sign in as Administrator">🛡️ Admin Demo</button>
+            <button id="demoManagerBtn" class="btn btn-sm btn-outline" type="button" title="Sign in as Station Operator">⛽ Manager Demo</button>
+          </div>
+        </div>
+
+        <!-- ==================== SIGN IN FORM ==================== -->
+        <div id="authLoginFormWrapper">
+          <div id="loginErrorBanner" class="form-error-banner" style="display: none;"></div>
+
+          <form id="loginForm" novalidate>
+            <div class="form-group">
+              <label for="loginEmailInput">Email Address <span class="required">*</span></label>
+              <input type="email" id="loginEmailInput" required placeholder="name@example.com" autocomplete="email">
+            </div>
+
+            <div class="form-group">
+              <label for="loginPasswordInput">Password <span class="required">*</span></label>
+              <input type="password" id="loginPasswordInput" required placeholder="••••••••" autocomplete="current-password">
+            </div>
+
+            <div class="form-footer-actions">
+              <button type="submit" id="submitLoginBtn" class="btn btn-primary btn-block">Sign In to CNG Connect</button>
+            </div>
+
+            <p class="auth-switch-text">
+              Don't have an account yet? <a href="#" id="switchToRegisterBtn">Create a free account &rarr;</a>
+            </p>
+          </form>
+        </div>
+
+        <!-- ==================== REGISTER FORM ==================== -->
+        <div id="authRegisterFormWrapper" style="display: none;">
+          <div id="registerErrorBanner" class="form-error-banner" style="display: none;"></div>
+
+          <form id="registerForm" novalidate>
+            <div class="form-grid">
+              <div class="form-group span-2">
+                <label for="registerNameInput">Full Name <span class="required">*</span></label>
+                <input type="text" id="registerNameInput" required placeholder="e.g., Rajesh Sharma">
+              </div>
+
+              <div class="form-group">
+                <label for="registerEmailInput">Email Address <span class="required">*</span></label>
+                <input type="email" id="registerEmailInput" required placeholder="name@example.com">
+              </div>
+
+              <div class="form-group">
+                <label for="registerPhoneInput">Phone Number (Optional)</label>
+                <input type="tel" id="registerPhoneInput" placeholder="+91 98765 43210">
+              </div>
+
+              <div class="form-group">
+                <label for="registerVehicleInput">Vehicle Category</label>
+                <select id="registerVehicleInput">
+                  <option value="Cab / Taxi (Dzire, WagonR)">Cab / Taxi (Commercial)</option>
+                  <option value="Auto Rickshaw (3-Wheeler)">Auto Rickshaw (3-Wheeler)</option>
+                  <option value="Private Car (Personal CNG)">Private Car (Personal)</option>
+                  <option value="Commercial Van / LCV">Commercial Van / LCV</option>
+                  <option value="Bus / Heavy Transport">Bus / Heavy Transport</option>
+                  <option value="Other / Two-Wheeler">Other</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="registerRoleInput">Account Role</label>
+                <select id="registerRoleInput">
+                  <option value="driver">CNG Driver / Commuter</option>
+                  <option value="station_manager">Station Partner / Operator</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="registerPasswordInput">Password (Min 6 chars) <span class="required">*</span></label>
+                <input type="password" id="registerPasswordInput" required placeholder="••••••••">
+              </div>
+
+              <div class="form-group">
+                <label for="registerConfirmPasswordInput">Confirm Password <span class="required">*</span></label>
+                <input type="password" id="registerConfirmPasswordInput" required placeholder="••••••••">
+              </div>
+            </div>
+
+            <div class="form-footer-actions">
+              <button type="submit" id="submitRegisterBtn" class="btn btn-primary btn-block">Create My Account</button>
+            </div>
+
+            <p class="auth-switch-text">
+              Already have an account? <a href="#" id="switchToLoginBtn">Sign in instead &rarr;</a>
+            </p>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL: USER PROFILE & SAVED FAVORITES      -->
+  <!-- ========================================== -->
+  <div id="userProfileModal" class="modal-backdrop" style="display: none;" role="dialog" aria-modal="true">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <h2 class="modal-title">Driver Profile & Saved Stations</h2>
+          <span class="modal-subtitle">Manage your account preferences and bookmarks</span>
+        </div>
+        <button id="closeProfileModalBtn" class="modal-close-btn" type="button" aria-label="Close profile modal">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Profile Overview Card -->
+        <div class="profile-card-overview">
+          <div class="profile-avatar-large">👤</div>
+          <div class="profile-meta-info">
+            <h3 id="profileModalName">User Name</h3>
+            <p id="profileModalEmail">email@example.com</p>
+            <div class="profile-tags-row">
+              <span id="profileModalRole" class="role-pill">Driver</span>
+              <span id="profileModalVehicle" class="cue-tag">Cab / Taxi</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="detail-info-sections">
+          <div class="info-block">
+            <h4>Saved Favorite Stations</h4>
+            <div id="profileFavoritesList" class="profile-favs-list">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+
+          <div class="info-block">
+            <h4>Account Metadata</h4>
+            <div class="meta-item">
+              <span class="meta-label">Phone:</span>
+              <span id="profileModalPhone">+91 ...</span>
+            </div>
+            <div class="meta-item">
+              <span class="meta-label">Member Since:</span>
+              <span id="profileModalCreated">Today</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button id="profileModalLogoutBtn" class="btn btn-danger-ghost" type="button">Sign Out</button>
+        <button type="button" class="btn btn-outline" onclick="window.closeProfileModal()">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL: STATION DETAIL VIEW                 -->
+  <!-- ========================================== -->
+  <div id="stationDetailModal" class="modal-backdrop" style="display: none;" role="dialog" aria-modal="true">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <span id="detailDemoBadge" class="badge-demo">Demo Record</span>
+          <h2 id="detailStationName" class="modal-title">Station Name</h2>
+          <span id="detailAreaCity" class="modal-subtitle">Area, City</span>
+        </div>
+        <button id="closeDetailModalBtn" class="modal-close-btn" type="button" aria-label="Close modal">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Status summary row -->
+        <div class="detail-metrics-grid">
+          <div class="metric-card">
+            <span class="metric-label">Availability</span>
+            <div id="detailAvailability" class="metric-value">Available</div>
+            <span id="detailAvailabilitySub" class="metric-hint">Status validated</span>
+          </div>
+          <div class="metric-card">
+            <span class="metric-label">Reported Pressure</span>
+            <div id="detailPressure" class="metric-value">210 bar</div>
+            <span id="detailPressureCategory" class="metric-hint">High Pressure</span>
+          </div>
+          <div class="metric-card">
+            <span class="metric-label">Estimated Wait</span>
+            <div id="detailWaitTime" class="metric-value">15 mins</div>
+            <span class="metric-hint">Subject to queue flux</span>
+          </div>
+          <div class="metric-card">
+            <span class="metric-label">Estimated Distance</span>
+            <div id="detailDistance" class="metric-value">Straight-line</div>
+            <span class="metric-hint">Haversine straight-line</span>
+          </div>
+        </div>
+
+        <!-- Information details list -->
+        <div class="detail-info-sections">
+          <div class="info-block">
+            <h4>Address & Location</h4>
+            <p id="detailFullAddress">Full Street Address</p>
+            <p class="coords-line" id="detailCoords">Lat: 0.000, Lng: 0.000</p>
+          </div>
+
+          <div class="info-block">
+            <h4>Operating Hours & Contact</h4>
+            <div class="meta-item">
+              <span class="meta-label">Hours:</span>
+              <span id="detailHours">24 Hours Open</span>
+            </div>
+            <div class="meta-item">
+              <span class="meta-label">Contact:</span>
+              <span id="detailPhone">+91 ...</span>
+            </div>
+          </div>
+
+          <div class="info-block">
+            <h4>Telemetry Source & Data Freshness</h4>
+            <div class="meta-item">
+              <span class="meta-label">Source Feed:</span>
+              <span id="detailSource">Sample Demo Feed</span>
+            </div>
+            <div class="meta-item">
+              <span class="meta-label">Last Timestamp:</span>
+              <span id="detailLastUpdated">2026-10-12 ...</span>
+            </div>
+            <div id="detailFreshnessWarning" class="freshness-alert" style="display: none;">
+              ⚠️ Warning: Telemetry data for this station was updated over 4 hours ago and may be stale.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button id="detailAdminEditBtn" class="btn btn-outline" type="button">Edit Record</button>
+        <a id="detailDirectionsBtn" href="#" target="_blank" rel="noopener noreferrer" class="btn btn-primary">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="3 11 22 2 13 21 11 13 3 11"/>
+          </svg>
+          <span>Get Directions</span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL: ADD / EDIT STATION (ADMIN)          -->
+  <!-- ========================================== -->
+  <div id="stationFormModal" class="modal-backdrop" style="display: none;" role="dialog" aria-modal="true">
+    <div class="modal-dialog modal-dialog-lg">
+      <div class="modal-header">
+        <h2 id="formModalTitle" class="modal-title">Add New CNG Station</h2>
+        <button id="closeFormModalBtn" class="modal-close-btn" type="button" aria-label="Close modal">&times;</button>
+      </div>
+
+      <form id="stationForm" novalidate>
+        <input type="hidden" id="formStationId" value="">
+
+        <div class="modal-body form-grid">
+          <!-- Error banner inside modal -->
+          <div id="formErrorBanner" class="form-error-banner" style="display: none;"></div>
+
+          <!-- Basic Info -->
+          <div class="form-group span-2">
+            <label for="formName">Station Name <span class="required">*</span></label>
+            <input type="text" id="formName" required placeholder="e.g., IGL CNG Station - Connaught Place">
+          </div>
+
+          <div class="form-group span-2">
+            <label for="formAddress">Street Address <span class="required">*</span></label>
+            <input type="text" id="formAddress" required placeholder="e.g., Outer Circle, Near Super Bazar">
+          </div>
+
+          <div class="form-group">
+            <label for="formCity">City <span class="required">*</span></label>
+            <input type="text" id="formCity" required placeholder="e.g., New Delhi, Mumbai, Pune">
+          </div>
+
+          <div class="form-group">
+            <label for="formArea">Area / Locality <span class="required">*</span></label>
+            <input type="text" id="formArea" required placeholder="e.g., Connaught Place, BKC, Sector 62">
+          </div>
+
+          <!-- Coordinates -->
+          <div class="form-group">
+            <label for="formLatitude">Latitude (-90.0 to 90.0) <span class="required">*</span></label>
+            <input type="number" step="any" id="formLatitude" required placeholder="e.g., 28.6315">
+          </div>
+
+          <div class="form-group">
+            <label for="formLongitude">Longitude (-180.0 to 180.0) <span class="required">*</span></label>
+            <input type="number" step="any" id="formLongitude" required placeholder="e.g., 77.2167">
+          </div>
+
+          <!-- Telemetry Status -->
+          <div class="form-group">
+            <label for="formAvailability">Availability Status <span class="required">*</span></label>
+            <select id="formAvailability" required>
+              <option value="available">Available (Operational)</option>
+              <option value="unavailable">Unavailable (Dry / Maintenance)</option>
+              <option value="unknown">Unknown</option>
+              <option value="not_reported">Not Reported</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="formPressureStatus">Pressure Classification</label>
+            <select id="formPressureStatus">
+              <option value="high">High (≥ 200 bar)</option>
+              <option value="medium">Medium (160 - 199 bar)</option>
+              <option value="low">Low (&lt; 160 bar)</option>
+              <option value="unknown">Unknown</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="formPressureBar">Pressure in Bar (Optional)</label>
+            <input type="number" step="1" min="0" max="300" id="formPressureBar" placeholder="e.g., 210">
+          </div>
+
+          <div class="form-group">
+            <label for="formWaitMinutes">Estimated Wait Minutes (Optional)</label>
+            <input type="number" min="0" max="300" id="formWaitMinutes" placeholder="Leave blank if unknown">
+          </div>
+
+          <div class="form-group">
+            <label for="formHours">Opening Hours</label>
+            <input type="text" id="formHours" placeholder="e.g., 24 Hours Open or 06:00 - 23:00">
+          </div>
+
+          <div class="form-group">
+            <label for="formPhone">Contact Phone</label>
+            <input type="text" id="formPhone" placeholder="e.g., +91 11 2341 5678">
+          </div>
+
+          <div class="form-group span-2">
+            <label for="formSource">Data Source / Verification Note <span class="required">*</span></label>
+            <input type="text" id="formSource" required placeholder="e.g., Admin Verified or Field Survey Sample">
+          </div>
+
+          <div class="form-group span-2 checkbox-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="formIsDemo" checked>
+              <span>Label as Sample Demo Record (Maintain transparent hackathon labeling)</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" id="cancelFormBtn" class="btn btn-outline">Cancel</button>
+          <button type="submit" id="saveStationBtn" class="btn btn-primary">Save Station Record</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toastContainer" class="toast-container" aria-live="polite"></div>
+
+  <!-- ========================================== -->
+  <!-- MULTILINGUAL AI CHATBOT WIDGET             -->
+  <!-- ========================================== -->
+  <!-- Floating Launcher Button -->
+  <button id="aiChatLauncherBtn" class="ai-chat-launcher" type="button" aria-label="Open CNG AI Assistant" title="Chat with CNG Connect AI">
+    <div class="ai-launcher-icon">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 8V4H8"/>
+        <rect width="16" height="12" x="4" y="8" rx="2"/>
+        <path d="M2 14h2"/>
+        <path d="M20 14h2"/>
+        <path d="M15 13v2"/>
+        <path d="M9 13v2"/>
+      </svg>
+    </div>
+    <span class="ai-launcher-badge">AI Assistant</span>
+  </button>
+
+  <!-- Expandable AI Chat Window -->
+  <aside id="aiChatWidget" class="ai-chat-window" style="display: none;" aria-label="CNG Connect AI Chatbot">
+    <!-- Chat Header -->
+    <div class="ai-chat-header">
+      <div class="ai-header-left">
+        <div class="ai-avatar-wrap">
+          <span class="ai-avatar">🤖</span>
+          <span class="ai-status-dot" title="Online & Ready"></span>
+        </div>
+        <div class="ai-header-info">
+          <h3 class="ai-header-title">CNG Connect AI</h3>
+          <span class="ai-header-sub">Multilingual Smart Assistant</span>
+        </div>
+      </div>
+
+      <div class="ai-header-actions">
+        <!-- Language Selector Dropdown -->
+        <div class="ai-lang-wrapper" title="Select Chat Language">
+          <select id="chatLangSelect" class="ai-lang-select" aria-label="Select Chat Language">
+            <option value="en">🇬🇧 English</option>
+            <option value="hi">🇮🇳 हिन्दी (Hindi)</option>
+            <option value="mr">🇮🇳 मराठी (Marathi)</option>
+            <option value="gu">🇮🇳 ગુજરાતી (Gujarati)</option>
+            <option value="es">🇪🇸 Español</option>
+            <option value="fr">🇫🇷 Français</option>
+            <option value="de">🇩🇪 Deutsch</option>
+          </select>
+        </div>
+
+        <!-- Open Full Voice Assistant HUD -->
+        <button id="chatOpenVoiceHudBtn" class="ai-icon-btn voice-hud-trigger" type="button" title="Open Full Hands-Free Voice Assistant HUD" aria-label="Open Voice Assistant HUD">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+            <line x1="12" y1="19" x2="12" y2="22"/>
+          </svg>
+        </button>
+
+        <button id="clearChatBtn" class="ai-icon-btn" type="button" title="Clear chat history" aria-label="Clear chat history">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="3 6 5 6 21 6"/>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+          </svg>
+        </button>
+
+        <button id="closeChatBtn" class="ai-icon-btn" type="button" title="Minimize chat" aria-label="Minimize chat">
+          &minus;
+        </button>
+      </div>
+    </div>
+
+    <!-- Suggested Quick Prompts -->
+    <div id="chatSuggestionsBox" class="ai-suggestions-box">
+      <!-- Populated dynamically per language -->
+    </div>
+
+    <!-- Message Stream -->
+    <div id="chatMessagesList" class="ai-messages-list">
+      <!-- Dynamic conversation bubbles -->
+    </div>
+
+    <!-- Typing Indicator -->
+    <div id="chatTypingIndicator" class="ai-typing-indicator" style="display: none;">
+      <span class="typing-dot"></span>
+      <span class="typing-dot"></span>
+      <span class="typing-dot"></span>
+      <span class="typing-text">AI is searching station telemetry...</span>
+    </div>
+
+    <!-- Chat Input Form -->
+    <form id="chatInputForm" class="ai-chat-input-bar">
+      <input
+        type="text"
+        id="chatInput"
+        placeholder="Ask anything about CNG stations, queues..."
+        autocomplete="off"
+        required
+      >
+      <button id="voiceInputBtn" class="ai-voice-btn" type="button" title="Speak message (Microphone)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
+          <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+          <line x1="12" y1="19" x2="12" y2="22"/>
+        </svg>
+      </button>
+      <button type="submit" id="sendChatBtn" class="ai-send-btn" title="Send message">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <line x1="22" y1="2" x2="11" y2="13"/>
+          <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+        </svg>
+      </button>
+    </form>
+  </aside>
+
+  <!-- ========================================== -->
+  <!-- AI VOICE ASSISTANT HUD MODAL OVERLAY       -->
+  <!-- ========================================== -->
+  <div id="voiceAssistantModal" class="voice-assistant-modal" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="voiceHudTitle">
+    <div id="voiceModalBackdrop" class="voice-modal-backdrop"></div>
+    <div class="voice-hud-container">
+      <!-- HUD Top Bar -->
+      <div class="voice-hud-topbar">
+        <div class="voice-brand">
+          <div class="voice-brand-orb">
+            <span class="voice-brand-pulse"></span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+              <line x1="12" y1="19" x2="12" y2="22"/>
+            </svg>
+          </div>
+          <div class="voice-brand-text">
+            <h3 id="voiceHudTitle" class="voice-hud-title">CNG Voice Copilot</h3>
+            <span class="voice-hud-sub">Hands-Free In-Transit Assistant</span>
+          </div>
+        </div>
+
+        <div class="voice-topbar-controls">
+          <!-- Language Selector -->
+          <div class="voice-lang-box" title="Select Copilot Language">
+            <select id="voiceLangSelect" class="voice-select-input" aria-label="Voice Assistant Language">
+              <option value="en">🇬🇧 English</option>
+              <option value="hi">🇮🇳 हिन्दी</option>
+              <option value="mr">🇮🇳 मराठी</option>
+              <option value="gu">🇮🇳 ગુજરાતી</option>
+              <option value="es">🇪🇸 Español</option>
+              <option value="fr">🇫🇷 Français</option>
+              <option value="de">🇩🇪 Deutsch</option>
+            </select>
+          </div>
+
+          <!-- Hands-Free Toggle -->
+          <label class="voice-handsfree-toggle" title="Continuous loop: keeps listening after speaking">
+            <input type="checkbox" id="voiceHandsFreeToggle">
+            <span class="handsfree-slider"></span>
+            <span class="handsfree-label">Hands-Free</span>
+          </label>
+
+          <!-- Audio Mute Button -->
+          <button id="voiceMuteBtn" type="button" class="voice-icon-btn" title="Mute/Unmute speech audio">
+            <svg class="mute-off-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+              <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/>
+            </svg>
+          </button>
+
+          <!-- Close Modal -->
+          <button id="closeVoiceModalBtn" type="button" class="voice-icon-btn close" title="Close Voice Assistant (Esc)">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Central Visualizer Area -->
+      <div class="voice-visualizer-section">
+        <!-- Holographic Sound Orb -->
+        <div class="voice-orb-wrapper">
+          <div id="voiceVisualizerOrb" class="voice-orb state-ready">
+            <div class="orb-ring ring-1"></div>
+            <div class="orb-ring ring-2"></div>
+            <div class="orb-ring ring-3"></div>
+            <div class="orb-core">
+              <svg class="orb-mic-icon" width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                <line x1="12" y1="19" x2="12" y2="22"/>
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <!-- Dynamic Frequency Waveform -->
+        <div id="voiceSoundWaveform" class="sound-waveform" aria-hidden="true">
+          <span class="wave-bar"></span>
+          <span class="wave-bar"></span>
+          <span class="wave-bar"></span>
+          <span class="wave-bar"></span>
+          <span class="wave-bar"></span>
+          <span class="wave-bar"></span>
+          <span class="wave-bar"></span>
+          <span class="wave-bar"></span>
+          <span class="wave-bar"></span>
+          <span class="wave-bar"></span>
+          <span class="wave-bar"></span>
+          <span class="wave-bar"></span>
+          <span class="wave-bar"></span>
+          <span class="wave-bar"></span>
+          <span class="wave-bar"></span>
+          <span class="wave-bar"></span>
+        </div>
+
+        <!-- Status Badge -->
+        <div id="voiceStatusBadge" class="voice-status-pill ready">
+          <span class="voice-status-dot"></span>
+          <span id="voiceStatusText">Ready — Tap mic or speak a command</span>
+        </div>
+
+        <p id="voiceHintText" class="voice-hint-text">
+          Ask: "Find high pressure CNG near me" or "Show Delhi stations"
+        </p>
+      </div>
+
+      <!-- Real-Time Transcript & Dialogue Feed -->
+      <div class="voice-dialogue-section">
+        <!-- Live User Speech Transcript -->
+        <div id="voiceTranscriptBox" class="voice-transcript-card">
+          <span class="transcript-prefix">You:</span>
+          <span id="voiceTranscriptText" class="transcript-body">"Tap the microphone or press 'V' to speak..."</span>
+          <span id="voiceInterimText" class="transcript-interim" style="display: none;"></span>
+        </div>
+
+        <!-- AI Assistant Spoken Response -->
+        <div id="voiceResponseBox" class="voice-response-card">
+          <div class="voice-response-header">
+            <span class="voice-avatar-small">🤖</span>
+            <span class="voice-response-title">CNG Connect AI</span>
+            <div class="voice-response-actions">
+              <button id="voiceReplayBtn" type="button" class="voice-mini-btn" title="Replay voice audio">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+                  <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+                </svg>
+                <span>Replay</span>
+              </button>
+              <button id="voiceStopBtn" type="button" class="voice-mini-btn stop" title="Stop speaking">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                  <rect x="6" y="6" width="12" height="12" rx="2"/>
+                </svg>
+                <span>Stop</span>
+              </button>
+            </div>
+          </div>
+          <div id="voiceResponseText" class="voice-response-text">
+            Hello! I am your CNG Voice Assistant. Speak naturally to find stations by pressure, wait times, city, or ask for the interactive map.
+          </div>
+          <!-- Grounded Station Cards rendered dynamically -->
+          <div id="voiceResponseStations" class="voice-response-stations"></div>
+        </div>
+      </div>
+
+      <!-- Quick Interactive Voice Prompts -->
+      <div class="voice-prompts-section">
+        <span class="voice-prompts-label">Quick Voice Commands:</span>
+        <div id="voiceQuickPrompts" class="voice-prompts-row">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+
+      <!-- Bottom Main Microphone Control -->
+      <div class="voice-bottom-controls">
+        <button id="voiceMainMicBtn" type="button" class="voice-main-mic-btn" title="Toggle Voice Listening">
+          <div class="mic-btn-ripple"></div>
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+            <line x1="12" y1="19" x2="12" y2="22"/>
+          </svg>
+        </button>
+        <span class="voice-bottom-hint">Tap microphone to talk • Press 'V' anytime to toggle</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  
+  <!-- App Scripts -->
+  <script src="js/auth.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/admin.js"></script>
+  <script src="js/chat.js"></script>
+  <script src="js/voiceAssistant.js"></script>
+</body>
+</html>
